@@ -1,0 +1,36 @@
+{
+  "name": "finapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/app.ts",
+  "type": "commonjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --respawn --transpile-only ./src/app.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "axios": "^1.18.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "flutterwave-node-v4": "^0.2.1",
+    "morgan": "^1.11.0",
+    "pg": "^8.21.0",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^25.9.3",
+    "@types/pg": "^8.20.0",
+    "prisma": "^7.8.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^6.0.3"
+  }
+}
