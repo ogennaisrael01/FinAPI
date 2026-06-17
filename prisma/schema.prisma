@@ -12,7 +12,74 @@ datasource db {
   provider = "postgresql"
 }
 
-
 model Test {
   id String @id @unique @default(uuid())
+}
+
+model User {
+  id String @id @unique @default(uuid())
+
+  firstName String? 
+  lastName String?
+
+  email String? @unique
+  phone String @unique
+
+  passwordHash String
+  pinHash String?
+
+  kycTier Int @default(0)
+
+  phoneVerified Boolean @default(false)
+  bvnVerified Boolean @default(false)
+  ninVerified Boolean @default(false)
+  isFrozen Boolean @default(false)
+
+  flwCustomerId String?
+  profilePhotoUrl Json? @default("{}")
+  dateOfBirth DateTime? 
+  gender String?
+  address Json? @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([phone])
+  @@index([flwCustomerId])
+  @@index([kycTier])
+  @@index([phoneVerified])
+  @@index([createdAt])
+  @@index([bvnVerified])
+  @@index([ninVerified])
+  @@index([isFrozen])
+
+  // relations
+  otpCodes OtpCodes[]
+}
+
+model OtpCodes {
+  id String @id @unique @default(uuid())
+
+  userId String
+  user User @relation(fields: [userId], references: [id])
+
+  otpHash String 
+
+  type String
+
+  attempts Int @default(0) // 0 - 3
+  createdAt DateTime @default(now())
+  usedAt DateTime?
+  isUsed Boolean @default(false)
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([isUsed])
+  @@index([attempts])
+  @@index([usedAt])
+  @@index([otpHash])
 }
