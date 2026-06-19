@@ -1,15 +1,15 @@
 import "dotenv/config";
-import "./queue/workers";
 import express from "express";
 import { createServer } from "node:http";
 import morgan from "morgan";
 import { logger } from "./logger";
 import { baseError } from "./middleware/errorMiddleWare";
-import { termiiService } from "./providers/termii/state";
+import { termiiService } from "./providers/twilio/state";
 import { router as userRouter } from "./modules/user/user.routes";
+import { worker } from "./queue/workers";
+import { processCreateCustomer } from "./jobs/flw";
 
-
-
+const workerInstance = worker() 
 const app = express();
 app.use(express.json())
 app.use("/api/fin", userRouter)
@@ -29,7 +29,11 @@ function startServer() {
 
 startServer();
 
-app.use("/send", (req, res) => {
-    const message = termiiService.sendMessage("2348142550239", "123456", "dnd")
+app.use("/send", async (req, res) => {
+    const data = {
+        userId: "10252e16-e182-4b38-9f89-688a78108323",
+        idempotencyKey: "10252e16-e182-4b38-9f89-688a78108323"
+    }
+    const message = await processCreateCustomer(data)
     return res.status(200).json(message)
 })

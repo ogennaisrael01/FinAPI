@@ -10,5 +10,13 @@ export class UserRepository {
     async findUserByPhone(phone: string){
         return prisma.user.findFirst({where: {phone: phone}})
     }
+    async updateUser(userId: string, data: any){
+        return await prisma.user.update({where: {id: userId}, data: data})
+    }
+
+    async findUserById(userId: string){
+        return prisma.user.findFirst({where: { id: userId}})
+    }
+
 }
 

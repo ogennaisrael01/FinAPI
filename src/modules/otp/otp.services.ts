@@ -1,26 +1,23 @@
-import bcrypt from 'bcryptjs';
+import * as crypto from "crypto";
 import { OtpRepository } from './otp.repository';
 import { logger } from '../../logger';
 
 export class OtpService {
 
     async generateCode(userId: string): Promise<string>{
-        const maxLength = 6; const store = []
-        for (let i=1; i >= maxLength; i++){
-            const otp = Math.floor(Math.random() * 10).toString()
-            store.push(otp)
+        const maxLength = 6; 
+        const codeA = []
+        for (let i=1;  i<= maxLength; i++){
+            const code = Math.floor(Math.random() * 10)
+            codeA.push(code)
         }
-        return store.join('')
+        return codeA.join("")
     }
 
     async hashCode (code: string): Promise<string>{
-        return await bcrypt.hash(code, Number(process.env.SALT || 10))
+        return crypto.createHash("sha256").update(code).digest("hex")
     }
-
-    async verifyCode(code: string, hash: string): Promise<boolean>{
-        return await bcrypt.compare(code, hash)
-    }
-
+    
     async createOTP(userId: string, type: string): Promise<string>{
         logger.debug("Creating OTP for user", {meta: userId.slice(0, 3) + "....."})
 

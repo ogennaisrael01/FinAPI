@@ -20,6 +20,7 @@ model User {
   id String @id @unique @default(uuid())
 
   firstName String? 
+  middleName String?
   lastName String?
 
   email String? @unique
@@ -31,13 +32,14 @@ model User {
   kycTier Int @default(0)
 
   phoneVerified Boolean @default(false)
+  emailVerified Boolean @default(false)
   bvnVerified Boolean @default(false)
   ninVerified Boolean @default(false)
   isFrozen Boolean @default(false)
 
   flwCustomerId String?
   profilePhotoUrl Json? @default("{}")
-  dateOfBirth DateTime? 
+  dateOfBirth String? 
   gender String?
   address Json? @default("{}")
 
@@ -56,13 +58,15 @@ model User {
 
   // relations
   otpCodes OtpCodes[]
+  outstandingTokens OutstandingToken[]
+  keyDocument KycDocuments[]
 }
 
 model OtpCodes {
   id String @id @unique @default(uuid())
 
   userId String
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   otpHash String 
 
@@ -82,4 +86,62 @@ model OtpCodes {
   @@index([attempts])
   @@index([usedAt])
   @@index([otpHash])
+}
+
+model KycDocuments {
+  id String @id @default(uuid()) 
+
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bvnEncrypted String?
+  ninEncrypted String?
+  idType String?
+  idDocURL String?
+
+  bvnVerifiedAt DateTime?
+  ninVerifiedAt DateTime?
+  idVerifiedAt DateTime?
+
+  rejectionCount Int @default(0)
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([id])
+  @@index([createdAt])
+}
+
+
+model OutstandingToken {
+  id  String @id @default(uuid())
+
+  userId String
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  expiresAt DateTime 
+
+  jti String
+  token String
+
+  blacklistTokens BlacklistedToken[]
+
+  @@index([jti])
+  @@index([expiresAt])
+  @@index([userId])
+
+}
+
+model BlacklistedToken {
+  id String @id @default(uuid())
+
+  tokenId String
+  token OutstandingToken @relation(fields:[tokenId], references: [id], onDelete:Cascade)
+
+  blacklistedAt DateTime @default(now())
+
+  @@index([tokenId])
 }

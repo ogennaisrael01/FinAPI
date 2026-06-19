@@ -4,7 +4,22 @@ export const JobNames = {
   SEND_EMAIL: 'send_email',
   SEND_SMS: 'send_sms',
   SEND_PUSH_NOTIFICATION: 'send_push_notification',
+  FILE_UPLOAD: "file_upload",
+  FLW_CREATE_CUSTOMER: "create_customer"
 };
+
+export const fileTypes = {
+    PROFILE_PICTURE: "profile_picture",
+    KYC_DOCUMENT: "kyc_document"
+}
+
+export interface createCustomerData{
+  userId: string, idempotencyKey: string
+}
+
+export interface FileJobData {
+    userId: string, file: Express.Multer.File, type: string, idType: string
+}
 
 interface SendEmailJobData {
   to: string;

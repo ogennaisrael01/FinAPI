@@ -4,7 +4,7 @@ import "dotenv/config";
 import { logger } from "./logger";
 
 function getDB(){
-    logger.debug("Creating Database Connection")
+    logger.info("Creating Database Connection")
     try{
         const globalForPrisma = global as unknown as {prisma: PrismaClient}
         const prismaClient = new PrismaClient({
