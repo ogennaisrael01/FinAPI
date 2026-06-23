@@ -1,8 +1,9 @@
 import axios from "axios"
-import { createCustomerType } from "./types"
+import { createCustomerType, createVirtualAccount } from "./types"
 import { logger } from "../../logger"
-import { response } from "express"
-import { UserDefinedMessageSubscriptionInstance } from "twilio/lib/rest/api/v2010/account/call/userDefinedMessageSubscription"
+import { User } from "../../../generated/prisma/browser"
+import { generateUniqueReference } from "./state"
+import { ServerError } from "../../errors/AppError"
 
 export class FlutterWave {
     private baseUrl: string = ""
@@ -18,7 +19,7 @@ export class FlutterWave {
     }
     async getAccessToken(){
         const currentTime = Date.now();
-        // Reuse token is it has more than 30 seconds left
+        // Reuse token if token still has more than 30 seconds left
         if ( this.cachedAccessToken && this.expiryTime - currentTime > 3000){
             return this.cachedAccessToken
         }
@@ -81,6 +82,54 @@ export class FlutterWave {
             }
 
             throw new Error(error.message)
+        }
+    }
+
+
+    async createVirtualAccount(user: User, idempotencyKey: string){
+        logger.debug("Creating virtual account for customers", {meta: {id: user.id?.slice(0, 4)}})
+        
+        
+        const reference = generateUniqueReference(user.firstName ? user.firstName: "FIN")
+        if (! user.flwCustomerId){
+            throw new Error("FlutterWave customer ID cannot be null")
+        }
+        const payload: createVirtualAccount = {
+            currency: "NGN",
+            account_type: "static",
+            reference: reference,
+            customer_id: user.flwCustomerId,
+            amount: 0
+        }
+
+        try{
+            const url = await this.url("virtual-accounts")
+            const headers = await this.getHeaders(idempotencyKey)
+            const response = await axios.post(url, payload, {headers: headers})
+
+            return response.data
+        }
+
+        catch(error: any){
+            logger.error(`Failed  Reason: ${error.response.data.error.messagae}`)
+            throw new Error(error)
+        }
+    }
+
+    async requestBvnVerification(user: User, bvn: string){
+        const payload = {
+            bvn: bvn, firstname: "Nibby", lastname: "Certifier",
+            // redirect_url: process.env.APP_BASE_URL + "/api/fin/bvn/verification"
+        }
+        const url = "https://api.flutterwave.com/v3/bvn/verifications"
+        const headers = {"Authorization": `Bearer ${process.env.FLW_SECRET_KEY}`}
+        try{
+            const response = await axios.post(url, payload, {headers: headers})
+            return response.data
+        }
+        catch (error: any){
+            logger.error("error message",{ meta: error.response.data})
+            throw new ServerError(error.message, error.response.data)
         }
     }
 

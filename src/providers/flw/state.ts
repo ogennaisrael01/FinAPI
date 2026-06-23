@@ -6,3 +6,9 @@ export const flw = new FlutterWave(
     process.env.FLW_CLIENT_SECRET_KEY as string
 
 )
+
+export function generateUniqueReference(username: string){
+    // extract the first four letters from username
+    const append = username ? username.slice(0, 4).toUpperCase() : "REFE"
+    return append + "-" + crypto.randomUUID()
+}   

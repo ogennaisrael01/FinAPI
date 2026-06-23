@@ -3,6 +3,7 @@ import { UserRepository } from "../modules/user/user.repository";
 import { createCustomerType } from "../providers/flw/types";
 import { createCustomerData } from "../queue/types";
 import { flw } from "../providers/flw/state";
+import { User } from "../../generated/prisma/browser";
 
 
 export async function processCreateCustomer(data: createCustomerData) {
@@ -31,4 +32,10 @@ export async function processCreateCustomer(data: createCustomerData) {
     await new UserRepository().updateUser(user.id, {flwCustomerId: customerId, kycTier: 1})
 
     return user
+}
+
+export async function processCreateVirtualAccount(userId: string, idempotencyKey: string) {
+    const user: any = await new UserRepository().findUserById(userId)
+    const response = await flw.createVirtualAccount(user, idempotencyKey)
+    return response
 }

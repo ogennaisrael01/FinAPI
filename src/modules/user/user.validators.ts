@@ -46,5 +46,13 @@ export const onboardingSchema = z.object({
 
 export const loginSchema = z.object({
     phone: z.string().nonempty(),
-    password: z.string().regex(/^\d+$/).min(6).max(6).nonempty()
+    password: z.string().regex(/^\d+$/, "secure integer only").min(6).max(6).nonempty()
+})
+
+export const bvnVerificationSchema = z.object({
+    bvn: z.string().min(11).max(11).regex(/^\d+$/, "secure integer only")
+})
+
+export const TransactionPinSchema = z.object({
+    pin: z.string().min(4).max(4).regex(/^\d+$/, "secure integer only")
 })

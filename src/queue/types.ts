@@ -5,7 +5,8 @@ export const JobNames = {
   SEND_SMS: 'send_sms',
   SEND_PUSH_NOTIFICATION: 'send_push_notification',
   FILE_UPLOAD: "file_upload",
-  FLW_CREATE_CUSTOMER: "create_customer"
+  FLW_CREATE_CUSTOMER: "create_customer",
+  BVN_VERIFICATION: "bvn_verification"
 };
 
 export const fileTypes = {
@@ -19,6 +20,10 @@ export interface createCustomerData{
 
 export interface FileJobData {
     userId: string, file: Express.Multer.File, type: string, idType: string
+}
+
+export interface BVNJobData {
+  userId: string, bvn: string
 }
 
 interface SendEmailJobData {

@@ -3,11 +3,11 @@ import express from "express";
 import { createServer } from "node:http";
 import morgan from "morgan";
 import { logger } from "./logger";
-import { baseError } from "./middleware/errorMiddleWare";
+import { ErrorHandleMiddleWare } from "./middleware/errorMiddleWare";
 import { termiiService } from "./providers/twilio/state";
 import { router as userRouter } from "./modules/user/user.routes";
 import { worker } from "./queue/workers";
-import { processCreateCustomer } from "./jobs/flw";
+import { processCreateCustomer, processCreateVirtualAccount } from "./jobs/flw";
 
 const workerInstance = worker() 
 const app = express();
@@ -16,7 +16,7 @@ app.use("/api/fin", userRouter)
 
 const morganStram = {write: (message: string) => logger.info(message.trim())}
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {stream: morganStram}))
-app.use(baseError)
+app.use(ErrorHandleMiddleWare)
 
 function startServer() {
     const server = createServer(app)
@@ -30,10 +30,9 @@ function startServer() {
 startServer();
 
 app.use("/send", async (req, res) => {
-    const data = {
-        userId: "10252e16-e182-4b38-9f89-688a78108323",
-        idempotencyKey: "10252e16-e182-4b38-9f89-688a78108323"
-    }
-    const message = await processCreateCustomer(data)
+    
+    const userId = "10252e16-e182-4b38-9f89-688a78108323"
+    const idempotencyKey = "10252e16-e182-4b38-9f89-688a78108323"
+    const message = await processCreateVirtualAccount(userId, idempotencyKey)
     return res.status(200).json(message)
 })

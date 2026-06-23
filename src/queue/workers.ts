@@ -50,6 +50,11 @@ export function worker (){
             const data = job.data.userId && job.data.idempotencyKey ? job.data : new Error("userId and idempotency key is not present!")
             await processCreateCustomer(data)
         }
+        else if (jobName === JobNames.BVN_VERIFICATION){
+            logger.debug("Procesing Bvn verification", {meta: {joId: job.id, userId: job.data.userId}})
+            const data = job.data.userId && job.data.bvn ? job.data : new Error("userId and BVN cannot be empty")
+            
+        }
 
     }, {connection: redisClient as any, concurrency: 5})
 

@@ -13,3 +13,11 @@ export interface createCustomerType {
     },
     phone: string
 }
+
+export interface createVirtualAccount {
+    currency: string,
+    account_type: string,
+    reference: string,
+    customer_id : string,
+    amount: number
+}
