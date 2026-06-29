@@ -38,4 +38,30 @@ export class UserControllers {
         const result = await new UserService().setTransactionPin(req)
         return res.status(200).json(result)
     }
+
+    async profile(req: Request, res: Response){
+        const result = await new UserService().userProfile(req.user)
+        return res.status(200).json(result)
+    }
+
+    async patchProfile (req: Request, res: Response){
+        const result = await new UserService().updateUserProfile(req)
+        return res.status(200).json(result)
+    }
+
+    async resendCode (req: Request, res: Response){
+        const result = await new UserService().resendVerificationCode(req)
+        return res.status(200).json(result)
+    }
+
+    async picture(req: Request, res: Response){
+        const result = await new UserService().setProfilePicture(req)
+        return res.status(200).json(result)
+    }
+
+    async account(req: Request, res: Response){
+        console.log("ff")
+        const result = await new UserService().accountLimits(req)
+        return res.status(200).json(result)
+    }
 }

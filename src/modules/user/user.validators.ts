@@ -56,3 +56,26 @@ export const bvnVerificationSchema = z.object({
 export const TransactionPinSchema = z.object({
     pin: z.string().min(4).max(4).regex(/^\d+$/, "secure integer only")
 })
+
+
+export const updateProfileSchema = z.object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    middleName: z.string().optional(),
+    address: z.object({
+        country: z.string().optional(),
+        state: z.string().optional(),
+        city: z.string().optional(),
+        LGA: z.string().optional(),
+        location: z.string().optional(),
+        address: z.string().optional(),
+        postalCode: z.string().optional()
+    }).optional(),
+})
+
+
+export const resendCodeSchema = z.object({
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    verificationType: z.string().nonempty()
+})

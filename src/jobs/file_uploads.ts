@@ -15,6 +15,9 @@ export async function processFileUpload(userId: string, file: any, type: string,
         if (type === fileTypes.KYC_DOCUMENT){
             await new UserService().processKYCUpload(userId, data.secure_url, idType as string)
         }
+        else if (type === fileTypes.PROFILE_PICTURE){
+            await new UserService().savePicture(userId, data.secure_url, data.public_id)
+        }
         logger.debug("file uploaded")
     }
     catch (error: any){

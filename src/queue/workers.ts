@@ -17,13 +17,13 @@ export function worker (){
         }
         if (jobName === JobNames.SEND_SMS) {
             logger.debug("Processing send_sms job", {meta: `Job ID: ${job.id}`})
-            const userId = job.data.userId
+            const phone = job.data.phone
             const code = job.data.code
-            if (!userId || !code) {
+            if (!phone || !code) {
                 logger.error(`Job data is missing userId or code for job ${job.id}`)
                 throw new Error(`Job data is missing userId or code for job ${job.id}`)
             }
-            await processSMS(userId, code)
+            await processSMS(phone, code)
         }
         else if (jobName === JobNames.SEND_EMAIL) {
             logger.debug("Processing send_email job", {meta: `Job ID: ${job.id}`})

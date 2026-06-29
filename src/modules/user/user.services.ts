@@ -1,13 +1,13 @@
-import { Request } from "express";
-import { bvnVerificationSchema, emailVerificationSchema, loginSchema, onboardingSchema, registerSchema, TransactionPinSchema, userVerificationSchema, validatePhone } from "./user.validators";
+import { Request, response } from "express";
+import { bvnVerificationSchema, emailVerificationSchema, loginSchema, onboardingSchema, registerSchema, resendCodeSchema, TransactionPinSchema, updateProfileSchema, userVerificationSchema, validatePhone } from "./user.validators";
 import bcrypt from "bcryptjs"
 import { UserRepository } from "./user.repository";
 import { logger } from "../../logger";
 import { OtpService } from "../otp/otp.services";
-import { ZodError } from "zod";
+import { success, ZodError } from "zod";
 import { queueClient } from "../../queue/queue.tasks";
 import { OtpRepository } from "../otp/otp.repository";
-import { VerificationTypes } from "./types";
+import { fetchAccountLimits, VerificationTypes } from "./types";
 import { OtpCodes, User } from "../../../generated/prisma/browser";
 import { issueToken } from "../../JWT/config";
 import { JobNames } from "../../queue/types";
@@ -61,7 +61,7 @@ export class UserService {
         await new WalletRepository().createWallet(user.id)
 
         /// process the job to send sms in the background
-        const job = await queueClient.add("send_sms", {userId: user.id, code: code})
+        const job = await queueClient.add("send_sms", {phone: Vphone, code: code})
         return {message: "User registered successfully", userId: user.id, jobId: job.id}
     }
 
@@ -130,6 +130,34 @@ export class UserService {
         // add job to queue
         const job = await queueClient.add(JobNames.SEND_EMAIL, {code: code, email: email})
         return { message: "verification email sent", serverTimeStamp:Date.now()}
+    }
+
+    async resendVerificationCode(req: Request){
+        const result = resendCodeSchema.safeParse(req.body)
+        if(!result.success){
+            throw new ValidationError(flattenErrorMesage(result.error), result.error.flatten())
+        }
+        const { phone, email, verificationType } = result.data
+        if (verificationType === VerificationTypes.phone_verification && !phone){
+            throw new ValidationError("Phone verification require the phone number")
+        }
+        else if(verificationType === VerificationTypes.email_verification && !email){
+            throw new ValidationError("email veirfiation require the email address")
+        }
+       
+        const user = phone && !email ?
+            await new UserRepository().findUserByPhone(phone as string) :
+            await new UserRepository().findUserByEmail(email as string)
+        
+        if (!user){
+            throw new NotFoundError('User not found')
+        }
+        const code = await new OtpService().createOTP(user.id, verificationType)
+        const job = verificationType === VerificationTypes.email_verification ? 
+            await queueClient.add(JobNames.SEND_EMAIL, {email: user.email, code: code}) : 
+            await queueClient.add(JobNames.SEND_SMS, {phone: user.phone, code: code})
+
+        return { status: true, message: "code resent", serverTimeStamp: Date.now()}
     }
 
     async processKYCUpload(userId: string, secureUrl: string, idType: string){
@@ -213,5 +241,37 @@ export class UserService {
         const pinHash = await this.setPassword(pin)
         await new UserRepository().updateUser(user.id, {pinHash})
         return { status: "success", message: "Pin set successfully"}
+    }
+
+    async userProfile(user: User){
+        const profile = await new UserRepository().findUserById(user.id)
+        return profile
+    }
+
+    async updateUserProfile(req: Request){
+        const result = updateProfileSchema.safeParse(req.body)
+        if (!result.success){
+            throw new ValidationError(flattenErrorMesage(result.error), result.error.flatten())
+        }
+        const data = result.data
+        const updatedProfile = await new UserRepository().updateUser(req.user.id, data)
+        return { success: true, details: data, serverTimeStamp:  Date.now()}
+    }
+
+    async setProfilePicture(req: Request){
+        await queueClient.add(JobNames.FILE_UPLOAD, {file: req.file, userId: req.user.id, type: fileTypes.PROFILE_PICTURE})
+        return { status: true, message: "profile updated", serverTimeStamp: Date.now()}
+    }
+
+    async savePicture(userId: string, secure_url: string, publicId: string){
+        const data = { secure_url, publicId, serverTimeStamp: Date.now() }
+        return await new UserRepository().updateUser(userId, {profilePhotoUrl: data})
+    }
+
+    async accountLimits(req: Request){
+        // return the full tier account limits
+        const accounts = fetchAccountLimits()
+        const user = await new UserRepository().findUserById(req.user.id)
+        return { status: true, details: { user: user, accounts: accounts}}
     }
 }
