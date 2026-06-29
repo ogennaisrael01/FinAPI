@@ -1,11 +1,11 @@
 import { Job, Worker } from "bullmq";
 import { redisClient } from "./redis.config";
 import { logger } from "../logger";
-import { FileJobData, JobNames } from "./types";
+import { BVNJobData, FileJobData, JobNames } from "./types";
 import { processSMS } from "../jobs/sms";
 import { processEmail } from "../jobs/email";
 import { processFileUpload } from "../jobs/file_uploads";
-import { processCreateCustomer } from "../jobs/flw";
+import { processBVNverification } from "../jobs/bvn_verification";
 
 export function worker (){
     const task = new Worker("task-processing", async (job: Job) => {
@@ -45,15 +45,10 @@ export function worker (){
             }
             await processFileUpload(data.userId, data.file, data.type, data.idType)
         }
-        else if (jobName === JobNames.FLW_CREATE_CUSTOMER){
-            logger.debug("Processing create customer job", {meta: { id: job.id, userId: job.data.userId}})
-            const data = job.data.userId && job.data.idempotencyKey ? job.data : new Error("userId and idempotency key is not present!")
-            await processCreateCustomer(data)
-        }
         else if (jobName === JobNames.BVN_VERIFICATION){
             logger.debug("Procesing Bvn verification", {meta: {joId: job.id, userId: job.data.userId}})
             const data = job.data.userId && job.data.bvn ? job.data : new Error("userId and BVN cannot be empty")
-            
+            await processBVNverification(data as BVNJobData)
         }
 
     }, {connection: redisClient as any, concurrency: 5})

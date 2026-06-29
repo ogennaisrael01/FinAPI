@@ -60,6 +60,8 @@ model User {
   otpCodes OtpCodes[]
   outstandingTokens OutstandingToken[]
   keyDocument KycDocuments[]
+  virtualAccount VirtualAccounts?
+  wallet Wallet?
 }
 
 model OtpCodes {
@@ -114,6 +116,45 @@ model KycDocuments {
   @@index([createdAt])
 }
 
+
+model VirtualAccounts {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accountNumber String @unique
+  accountName String
+  bankName String?
+  bankCode String
+  monnifyRef String? @unique
+ 
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([accountNumber, bankCode])
+  @@index([monnifyRef])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+
+model Wallet {
+  id String @id @default(uuid()) @unique
+
+  userId  String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  balance Int @default(0)
+  lockedBalance Int @default(0)
+
+  currency String @default('NGN')
+  isFrozen Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 model OutstandingToken {
   id  String @id @default(uuid())

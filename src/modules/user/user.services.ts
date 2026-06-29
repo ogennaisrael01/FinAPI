@@ -12,12 +12,10 @@ import { OtpCodes, User } from "../../../generated/prisma/browser";
 import { issueToken } from "../../JWT/config";
 import { JobNames } from "../../queue/types";
 import { fileTypes } from "../../queue/types";
-import { DocumentRepootory } from "../kycDocuments/kyc.repositories";
+import { DocumentRepository } from "../kycDocuments/kyc.repositories";
 import { AuthenticationError, ConflictError, NotFoundError, ValidationError } from "../../errors/AppError";
 import { RateLimitError } from "bullmq";
-import { flw } from "../../providers/flw/state";
-import { throwDeprecation } from "node:process";
-
+import { WalletRepository } from "../wallets/repository";
 
 export function flattenErrorMesage(error: ZodError){
     const flattened = error.flatten()
@@ -58,6 +56,9 @@ export class UserService {
         const hashedPassword = await this.setPassword(password)
         const user = await new UserRepository().createUser(Vphone, hashedPassword)
         const code = await new OtpService().createOTP(user.id, VerificationTypes.phone_verification)
+        
+        // set up user wallet 
+        await new WalletRepository().createWallet(user.id)
 
         /// process the job to send sms in the background
         const job = await queueClient.add("send_sms", {userId: user.id, code: code})
@@ -132,7 +133,7 @@ export class UserService {
     }
 
     async processKYCUpload(userId: string, secureUrl: string, idType: string){
-        return await new DocumentRepootory().createUserIdentity(userId, secureUrl, idType)
+        return await new DocumentRepository().createUserIdentity(userId, secureUrl, idType)
     }
 
     async completeProfile (req: Request ){
@@ -150,17 +151,12 @@ export class UserService {
         if (!req.file)throw new ValidationError("User identity upload is required")
 
         // update user profile 
-        const data = { email, firstName, lastName, gender, dateOfBirth:DOB, address, middleName}
+        const data = { email, firstName, lastName, gender, dateOfBirth:DOB, address, middleName, kycTier: 1}
         await new UserRepository().updateUser(user.id, data)
 
         // add file upload to queue
         const idType = userIdentity.type
         await queueClient.add(JobNames.FILE_UPLOAD, {file: req.file, userId: user.id, type: fileTypes.KYC_DOCUMENT, idType})
-
-        // add another job to create the customer
-        const idempotencyKey = req.headers["x-idempotency-key"] ?? crypto.randomUUID()
-        await queueClient.add(JobNames.FLW_CREATE_CUSTOMER, { userId: user.id, idempotencyKey})
-
         return { message: "onboard complete", userId: user.id, serverTimeStamp: Date.now()}
     }
 
@@ -198,8 +194,8 @@ export class UserService {
         }
         const user: User = req.user
         const { bvn } = result.data
-        const response = await flw.requestBvnVerification(user, bvn)
-        return {status: "success", response}
+        const jon = await queueClient.add(JobNames.BVN_VERIFICATION, {userId: user.id, bvn: bvn})
+        return {status: true, message: "Task queued: In progress", serverTimeStamp: Date.now()}
     }
 
     async setTransactionPin(req: Request){
